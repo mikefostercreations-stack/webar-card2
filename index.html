@@ -51,14 +51,10 @@
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
   >
     <a-assets timeout="60000">
-      <!-- Replace this with your own overlay image or video -->
-      <img id="overlayImage" src="assets/media/overlay.png" crossorigin="anonymous" />
-
-      <!-- If you want to use a video overlay, add your file to assets/media/ and update the src below. -->
-      <!-- Keep muted for autoplay on mobile; remove 'muted' if you want sound (requires a tap first). -->
+      <!-- Video overlay (place assets/media/bowersfire.mp4) -->
       <video
         id="overlayVideo"
-        src="assets/media/overlay.mp4"
+        src="assets/media/bowersfire.mp4"
         preload="auto"
         loop
         muted
@@ -68,8 +64,7 @@
       ></video>
     </a-assets>
 
-    <!-- AR.js NFT marker: url points to the marker file base name WITHOUT extension -->
-    <!-- Place your mycard.fset / mycard.fset3 / mycard.iset in assets/target and set url to 'assets/target/mycard' -->
+    <!-- NFT marker: base name is 'bowers' (place in assets/target/) -->
     <a-nft
       type="nft"
       url="assets/target/bowers"
@@ -79,29 +74,16 @@
       smoothThreshold="5"
       emitevents="true"
     >
-      <!-- OPTION A (default): 2D image overlay -->
-      <a-image
-        id="imagePlane"
-        src="#overlayImage"
-        rotation="-90 0 0"
-        position="0 0 0"
-        width="1"
-        height="1"
-        visible="true"
-      ></a-image>
-
-      <!-- OPTION B: video overlay (uncomment to use). Adjust width/height to your target's aspect. -->
-      <!--
+      <!-- Video plane sized roughly to a 2.5x3.5 card aspect (adjust as needed) -->
       <a-video
         id="videoPlane"
         src="#overlayVideo"
         rotation="-90 0 0"
         position="0 0 0"
-        width="1"
-        height="1"
+        width="0.0635"
+        height="0.0889"
         autoplay="false"
       ></a-video>
-      -->
     </a-nft>
 
     <a-entity camera></a-entity>
@@ -114,7 +96,7 @@
       const tapOverlay = document.getElementById('tapToStart');
       const videoPlane = document.querySelector('#videoPlane');
 
-      // Helper to unlock video playback on iOS (requires a user gesture)
+      // Unlock iOS video playback (needs a user gesture for sound; remove 'muted' to enable audio)
       function unlock() {
         if (!video) return;
         video.play().then(() => {
@@ -131,7 +113,6 @@
 
       if (marker) {
         marker.addEventListener('markerFound', () => {
-          // Auto-play video when marker is found (if using OPTION B)
           if (video && videoPlane) {
             video.play().catch(() => tapOverlay.classList.remove('hidden'));
           }

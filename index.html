@@ -44,44 +44,6 @@
   <div id="tapToStart" class="hidden">Tap to enable video playback</div>
   <div class="hint">Point your camera at the target image</div>
 
-  <div id="camStatus" style="position:fixed;top:10px;left:10px;background:rgba(0,0,0,.6);color:#fff;padding:8px 10px;border-radius:8px;font:14px system-ui;z-index:9999;">
-  Checking camera…
-</div>
-
-<script>
-(async () => {
-  const status = document.getElementById('camStatus');
-  if (!window.isSecureContext) {
-    status.textContent = 'This page is not secure (HTTPS required). Open via https://';
-    return;
-  }
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    status.textContent = 'Camera API not available in this browser. Try Safari/Chrome.';
-    return;
-  }
-  try {
-    // Ask for camera first to surface permission UI and errors
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    // Close stream immediately; AR.js will open it again
-    stream.getTracks().forEach(t => t.stop());
-    status.textContent = 'Camera OK. Starting AR…';
-    // Give AR.js a moment to attach, then hide status
-    setTimeout(() => status.remove(), 1200);
-    // Now reveal the scene (if you wrap it hidden)
-    document.getElementById('arContainer')?.classList.remove('hidden');
-  } catch (err) {
-    console.error(err);
-    status.textContent = 'Camera error: ' + (err && err.message ? err.message : err);
-  }
-})();
-</script>
-
-<style>
-  .hidden { display: none; }
-</style>
-
-<div id="arContainer" class="hidden">
-  <!-- Your existing <a-scene> goes here unchanged -->
   <a-scene
     vr-mode-ui="enabled: false"
     embedded
@@ -89,6 +51,7 @@
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
   >
     <a-assets timeout="60000">
+      <!-- Video overlay (place assets/media/bowersfire.mp4) -->
       <video
         id="overlayVideo"
         src="assets/media/bowersfire.mp4"
@@ -101,6 +64,7 @@
       ></video>
     </a-assets>
 
+    <!-- NFT marker: base name is 'bowers' (place in assets/target/) -->
     <a-nft
       type="nft"
       url="assets/target/bowers"
@@ -110,6 +74,7 @@
       smoothThreshold="5"
       emitevents="true"
     >
+      <!-- Video plane sized roughly to a 2.5x3.5 card aspect (adjust as needed) -->
       <a-video
         id="videoPlane"
         src="#overlayVideo"
@@ -123,4 +88,44 @@
 
     <a-entity camera></a-entity>
   </a-scene>
-</div>
+
+  <script>
+    (function(){
+      const marker = document.querySelector('a-nft');
+      const video = document.querySelector('#overlayVideo');
+      const tapOverlay = document.getElementById('tapToStart');
+      const videoPlane = document.querySelector('#videoPlane');
+
+      // Unlock iOS video playback (needs a user gesture for sound; remove 'muted' to enable audio)
+      function unlock() {
+        if (!video) return;
+        video.play().then(() => {
+          video.pause();
+          tapOverlay.classList.add('hidden');
+          window.removeEventListener('touchstart', unlock);
+          window.removeEventListener('click', unlock);
+        }).catch(() => {
+          tapOverlay.classList.remove('hidden');
+        });
+      }
+      window.addEventListener('touchstart', unlock, { once: true });
+      window.addEventListener('click', unlock, { once: true });
+
+      if (marker) {
+        marker.addEventListener('markerFound', () => {
+          if (video && videoPlane) {
+            video.play().catch(() => tapOverlay.classList.remove('hidden'));
+          }
+        });
+        marker.addEventListener('markerLost', () => {
+          if (video) video.pause();
+        });
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && video) video.pause();
+      });
+    })();
+  </script>
+</body>
+</html>

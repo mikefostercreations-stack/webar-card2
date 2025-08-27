@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Mike Foster Creations — WebAR (NFT)</title>
+
+  <!-- A-Frame core -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- AR.js for A-Frame with NFT support -->
+  <!-- If this CDN ever fails, try: https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
+
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+    #tapToStart {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+    #tapToStart.hidden { display: none; }
+    .hint {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      opacity: 0.85;
+      background: rgba(0,0,0,0.35);
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div id="tapToStart" class="hidden">Tap to enable video playback</div>
+  <div class="hint">Point your camera at the target image</div>
+
+  <a-scene
+    vr-mode-ui="enabled: false"
+    embedded
+    renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+  >
+    <a-assets timeout="60000">
+      <!-- Replace this with your own overlay image or video -->
+      <img id="overlayImage" src="assets/media/overlay.png" crossorigin="anonymous" />
+
+      <!-- If you want to use a video overlay, add your file to assets/media/ and update the src below. -->
+      <!-- Keep muted for autoplay on mobile; remove 'muted' if you want sound (requires a tap first). -->
+      <video
+        id="overlayVideo"
+        src="assets/media/overlay.mp4"
+        preload="auto"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous"
+      ></video>
+    </a-assets>
+
+    <!-- AR.js NFT marker: url points to the marker file base name WITHOUT extension -->
+    <!-- Place your mycard.fset / mycard.fset3 / mycard.iset in assets/target and set url to 'assets/target/mycard' -->
+    <a-nft
+      type="nft"
+      url="assets/target/mycard"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      emitevents="true"
+    >
+      <!-- OPTION A (default): 2D image overlay -->
+      <a-image
+        id="imagePlane"
+        src="#overlayImage"
+        rotation="-90 0 0"
+        position="0 0 0"
+        width="1"
+        height="1"
+        visible="true"
+      ></a-image>
+
+      <!-- OPTION B: video overlay (uncomment to use). Adjust width/height to your target's aspect. -->
+      <!--
+      <a-video
+        id="videoPlane"
+        src="#overlayVideo"
+        rotation="-90 0 0"
+        position="0 0 0"
+        width="1"
+        height="1"
+        autoplay="false"
+      ></a-video>
+      -->
+    </a-nft>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    (function(){
+      const marker = document.querySelector('a-nft');
+      const video = document.querySelector('#overlayVideo');
+      const tapOverlay = document.getElementById('tapToStart');
+      const videoPlane = document.querySelector('#videoPlane');
+
+      // Helper to unlock video playback on iOS (requires a user gesture)
+      function unlock() {
+        if (!video) return;
+        video.play().then(() => {
+          video.pause();
+          tapOverlay.classList.add('hidden');
+          window.removeEventListener('touchstart', unlock);
+          window.removeEventListener('click', unlock);
+        }).catch(() => {
+          tapOverlay.classList.remove('hidden');
+        });
+      }
+      window.addEventListener('touchstart', unlock, { once: true });
+      window.addEventListener('click', unlock, { once: true });
+
+      if (marker) {
+        marker.addEventListener('markerFound', () => {
+          // Auto-play video when marker is found (if using OPTION B)
+          if (video && videoPlane) {
+            video.play().catch(() => tapOverlay.classList.remove('hidden'));
+          }
+        });
+        marker.addEventListener('markerLost', () => {
+          if (video) video.pause();
+        });
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && video) video.pause();
+      });
+    })();
+  </script>
+</body>
+</html>

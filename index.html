@@ -44,12 +44,18 @@
   <div id="tapToStart" class="hidden">Tap to enable video playback</div>
   <div class="hint">Point your camera at the target image</div>
 
-  <a-scene
-    vr-mode-ui="enabled: false"
-    embedded
-    renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
-    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
-  >
+<script>
+navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+  .then(stream => stream.getTracks().forEach(t => t.stop()))
+  .catch(err => console.error("Camera request failed:", err));
+</script>
+
+ <a-scene
+  vr-mode-ui="enabled: false"
+  embedded
+  renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
+  arjs="trackingMethod: best; sourceType: webcam; sourceUrl: null; debugUIEnabled: false;"
+>
     <a-assets timeout="60000">
       <!-- Video overlay (place assets/media/bowersfire.mp4) -->
       <video
